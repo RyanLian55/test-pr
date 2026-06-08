@@ -70,3 +70,6 @@ srcpack.config.ts
 # macOS
 # https://github.com/github/gitignore/blob/master/Global/macOS.gitignore
 .DS_Store
+
+.venv
+.test

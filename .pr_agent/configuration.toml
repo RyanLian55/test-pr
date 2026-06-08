@@ -1,0 +1,10 @@
+[config]
+model="openrouter/openai/gpt-oss-20b:free"
+fallback_models=["openrouter/nvidia/nemotron-3-super-120b-a12b:free"]
+
+[pr_reviewer]
+extra_instructions="""
+Review bằng tiếng Việt.
+Chỉ tập trung bug, security, edge case, code smell nghiêm trọng.
+Không comment style hoặc format.
+"""
