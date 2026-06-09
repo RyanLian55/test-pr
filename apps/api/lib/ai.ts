@@ -22,5 +22,5 @@ export function getOpenAI(ctx: OpenAIContext): OpenAIProvider {
 
   ctx.cache.set(OPENAI_PROVIDER, provider);
 
-  return provider;
+  // return provider;
 }
