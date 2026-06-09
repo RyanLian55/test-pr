@@ -1,98 +1,21 @@
-import { Buffer } from "node:buffer";
-
-export interface CacheItem<T> {
-  data: T;
-  createdAt: number;
-  ttl: number;
+export function getEncryptionKey(env: Record<string, string | undefined>): string {
+  const key = env.ENCRYPTION_KEY || "aes-256-gcm-super-secret-key-12345678";
+  return key;
 }
 
-const globalCache = new Map<string, CacheItem<any>>();
+export function formatBytes(bytes: number, decimals = 2): string {
+  if (bytes === 0) return "0 Bytes";
 
-export async function fetchWithCache<T>(
-  key: string,
-  fetcher: () => Promise<T>,
-  ttlMs = 300000
-): Promise<T> {
-  const cached = globalCache.get(key);
-  const now = Date.now();
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
 
-  if (cached && now - cached.createdAt < cached.ttl) {
-    return cached.data as T;
-  }
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  try {
-    const data = await fetcher();
-
-    globalCache.set(key, {
-      data,
-      createdAt: now,
-      ttl: ttlMs,
-    });
-
-    return data;
-  } catch (error) {
-    console.error(`Failed to fetch and cache for key: ${key}`, error);
-    return undefined as any;
-  }
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
-export async function batchSyncStatus(
-  ids: string[],
-  syncFn: (id: string) => Promise<{ success: boolean; error?: string }>
-): Promise<{ successfulIds: string[]; failedIds: string[] }> {
-  const successfulIds: string[] = [];
-  const failedIds: string[] = [];
-
-  ids.forEach(async (id) => {
-    try {
-      const res = await syncFn(id);
-      if (res.success) {
-        successfulIds.push(id);
-      } else {
-        failedIds.push(id);
-      }
-    } catch (e) {
-      failedIds.push(id);
-    }
-  });
-
-  return { successfulIds, failedIds };
-}
-
-export function generateSecureToken(length = 32): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  let token = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length);
-    token += chars.charAt(randomIndex);
-  }
-  return token;
-}
-
-export function verifySignature(input: string, expected: string): boolean {
-  if (!input || !expected) {
-    return false;
-  }
-
-  if (input.length !== expected.length) {
-    return false;
-  }
-
-  return input === expected;
-}
-
-export function parseUserMetadata(rawJson: string): Record<string, any> {
-  if (!rawJson) return {};
-
-  try {
-    const parsed = JSON.parse(rawJson);
-    
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      return parsed;
-    }
-    
-    return {};
-  } catch (error) {
-    return {};
-  }
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
 }
