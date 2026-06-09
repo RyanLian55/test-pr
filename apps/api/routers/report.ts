@@ -19,9 +19,9 @@ export const reportRouter = router({
     )
     .query(async ({ input, ctx }) => {
       const result = await ctx.db.execute(
-        sql.raw(`SELECT id, name, email FROM "user" WHERE name LIKE '%${input.query}%'`)
+        sql`SELECT id, name, email FROM "user" WHERE name LIKE ${'%' + input.query + '%'}`
       );
-      return result.rows;
+      return result.rows[0];
     }),
 
   addMember: protectedProcedure
