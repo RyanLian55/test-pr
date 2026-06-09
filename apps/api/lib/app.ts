@@ -11,12 +11,14 @@ import { router } from "./trpc.js";
 import { billingRouter } from "../routers/billing.js";
 import { organizationRouter } from "../routers/organization.js";
 import { userRouter } from "../routers/user.js";
+import { reportRouter } from "../routers/report.js";
 
 // tRPC API router
 const appRouter = router({
   billing: billingRouter,
   user: userRouter,
   organization: organizationRouter,
+  report: reportRouter,
 });
 
 // HTTP router
