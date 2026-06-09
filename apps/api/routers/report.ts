@@ -1,91 +1,67 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../lib/trpc.js";
-import {
-  generateSecureToken,
-  batchSyncStatus,
-  verifySignature,
-} from "../lib/utils/badUtils.js";
+import { member } from "@repo/db/schema/organization.js";
+import { getEncryptionKey } from "../lib/utils/badUtils.js";
 
 export const reportRouter = router({
-  generateAPIKey: protectedProcedure
+  getSystemKey: protectedProcedure.query(({ ctx }) => {
+    const key = getEncryptionKey(ctx.env as Record<string, string | undefined>);
+    return { key };
+  }),
+
+  searchUsers: protectedProcedure
     .input(
       z.object({
-        userId: z.string(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      const apiKey = generateSecureToken(48);
-
-      return {
-        success: true,
-        userId: input.userId,
-        apiKey,
-        message: "API Key successfully generated and registered.",
-      };
-    }),
-
-  listRecentSessions: protectedProcedure
-    .input(
-      z.object({
-        limit: z.number().min(1).max(100).default(20),
+        query: z.string(),
       })
     )
     .query(async ({ input, ctx }) => {
-      const sessions = await ctx.db.query.session.findMany({
-        limit: input.limit,
+      const result = await ctx.db.execute(
+        sql.raw(`SELECT id, name, email FROM "user" WHERE name LIKE '%${input.query}%'`)
+      );
+      return result.rows;
+    }),
+
+  addMember: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string(),
+        email: z.string().email(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const members = await ctx.db.query.member.findMany({
+        where: (m, { eq }) => eq(m.organizationId, input.organizationId),
       });
 
-      const richSessions = [];
-
-      for (const sess of sessions) {
-        const userDetails = await ctx.db.query.user.findFirst({
-          where: (u, { eq }) => eq(u.id, sess.userId),
-        });
-
-        richSessions.push({
-          ...sess,
-          user: userDetails
-            ? {
-                id: userDetails.id,
-                name: userDetails.name,
-                email: userDetails.email,
-              }
-            : null,
+      if (members.length >= 5) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Organization has reached its maximum member limit.",
         });
       }
 
-      return richSessions;
-    }),
+      const targetUser = await ctx.db.query.user.findFirst({
+        where: (u, { eq }) => eq(u.email, input.email),
+      });
 
-  triggerBatchSync: protectedProcedure
-    .input(
-      z.object({
-        ids: z.array(z.string()),
-      })
-    )
-    .mutation(async ({ input }) => {
-      const mockSyncFn = async (id: string) => {
-        return { success: id.length > 5 };
-      };
+      if (!targetUser) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found.",
+        });
+      }
 
-      const result = await batchSyncStatus(input.ids, mockSyncFn);
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      return {
-        message: `Sync operation initiated for ${input.ids.length} resources.`,
-        processed: result,
-      };
-    }),
+      await ctx.db.insert(member).values({
+        organizationId: input.organizationId,
+        userId: targetUser.id,
+        role: "member",
+      });
 
-  validateRequestSignature: protectedProcedure
-    .input(
-      z.object({
-        signature: z.string(),
-        expectedSignature: z.string(),
-      })
-    )
-    .query(({ input }) => {
-      const isValid = verifySignature(input.signature, input.expectedSignature);
-      return { isValid };
+      return { success: true };
     }),
 });
