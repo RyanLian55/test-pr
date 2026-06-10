@@ -1,6 +1,6 @@
 [config]
-model="test-pr-combo"
-fallback_models=["cx/gpt-5.5-review", "cx/gpt-5.4-review"]
+model="groq/openai/gpt-oss-120b"
+fallback_models=["groq/qwen/qwen3-32b","fast-chat"]
 custom_model_max_tokens=4000
 max_model_tokens=4000
 
