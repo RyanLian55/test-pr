@@ -1,5 +1,5 @@
 [config]
-model="test-pr-combo"
+model="openai/test-pr-combo"
 fallback_models = ["openai/cx/gpt-5.5-review", "openai/cx/gpt-5.4-review"]
 custom_model_max_tokens = 4000
 max_model_tokens = 4000
