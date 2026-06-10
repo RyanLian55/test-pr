@@ -1,8 +1,8 @@
 [config]
-model="groq/openai/gpt-oss-120b"
-fallback_models=["groq/qwen/qwen3-32b","fast-chat"]
-custom_model_max_tokens=4000
-max_model_tokens=4000
+model = "gpt-5.5-review"
+fallback_models = ["cx/gpt-5.4-review", "cx/gpt-5.4-mini-review"]
+custom_model_max_tokens = 4000
+max_model_tokens = 4000
 
 [pr_reviewer]
 extra_instructions="""
@@ -20,5 +20,5 @@ IMPORTANT:
 - Chỉ comment vào dòng có bug/rủi ro thật sự.
 - Ưu tiên security, runtime error, edge case.
 """
-num_code_suggestions=5
-suggestions_score_threshold=7
+num_code_suggestions=8
+suggestions_score_threshold=4
